@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>HTML Runner</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#000;--card:#111;--line:#262626;--text:#f2f2f2;--dim:#8a8a8a;--doc:#ff5a14;--tag:#2f7bf6;--attr:#b27cf2;--val:#8bd12f;--com:#6f6f6f;--num:#ff9d4d;
+ color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,textarea:focus-visible{outline:2px solid var(--tag);outline-offset:2px}
+.app{height:100%;display:flex;flex-direction:column;gap:10px;padding:10px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 4px}
+.ttl{font-weight:600;font-size:16px}
+.seg{display:none;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{background:none;border:0;border-radius:999px;padding:6px 16px;color:var(--dim)}
+.seg button[aria-selected=true]{background:var(--text);color:#000;font-weight:600}
+.txt{background:none;border:0;color:var(--dim);padding:6px 10px;border-radius:8px}
+.txt:hover{color:var(--text)}
+.panes{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:26px;overflow:hidden}
+.card:focus-within{border-color:#3a3a3a}
+.head{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:12px 14px 4px 24px}
+.head h2{margin:0;font-size:18px;font-weight:600}
+.tools{display:flex;gap:4px;align-items:center}
+.ib{background:none;border:0;width:40px;height:40px;border-radius:50%;display:grid;place-items:center}
+.ib:hover{background:#222}
+.ib svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pill{background:none;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--dim)}
+.pill[aria-pressed=true]{color:var(--val);border-color:var(--val)}
+.run{background:var(--text);color:#000;border:0;border-radius:999px;padding:8px 18px;font-weight:600;margin-left:4px}
+.ed{flex:1;min-height:0;overflow:auto;padding:6px 0 24px}
+.code{display:grid;min-width:100%;width:max-content;min-height:100%}
+.code pre,.code textarea{grid-area:1/1;margin:0;padding:6px 24px;border:0;font:400 14px/1.8 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-variant-ligatures:none;font-feature-settings:"liga" 0,"calt" 0;letter-spacing:0;tab-size:4;white-space:pre}
+.code pre{pointer-events:none;color:var(--text)}
+.code textarea{width:100%;height:100%;resize:none;overflow:hidden;background:transparent;color:transparent;-webkit-text-fill-color:transparent;caret-color:#fff;outline:0}
+.code textarea::selection{background:rgba(47,123,246,.35)}
+.code textarea::placeholder{-webkit-text-fill-color:var(--com);color:var(--com)}
+.d{color:var(--doc)}.b{font-weight:700}.t{color:var(--tag)}.a{color:var(--attr)}.v{color:var(--val)}.c{color:var(--com)}.p{color:var(--text)}.n{color:var(--num)}
+.view{position:relative;flex:1;min-height:0;margin-top:6px}
+.view iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+.view.dark iframe{background:#000}
+.empty{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--dim);background:var(--card)}
+.empty[hidden]{display:none}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);transform:translateX(-50%);background:var(--text);color:#000;padding:8px 16px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+[hidden]{display:none!important}
+@media (max-width:800px){
+ .panes{grid-template-columns:1fr}
+ .seg{display:flex}.ttl{display:none}
+ [data-tab=code] #outCard{display:none}
+ [data-tab=out] #codeCard{display:none}
+}
+.credit{text-align:center;font-size:13px;color:var(--dim);padding:0 0 2px}
+.credit b{font-weight:700;background:linear-gradient(90deg,var(--doc),var(--num),var(--val),var(--tag),var(--attr),var(--doc));background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:shift 5s linear infinite}
+@keyframes shift{to{background-position:200% 0}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}.credit b{animation:none}}
+</style>
+</head>
+<body>
+<div class="app" id="app" data-tab="code">
+ <div class="bar">
+  <span class="ttl">HTML Runner</span>
+  <div class="seg" role="tablist">
+   <button role="tab" id="tCode" aria-selected="true">Code</button>
+   <button role="tab" id="tOut" aria-selected="false">Output</button>
+  </div>
+  <div><button class="txt" id="sample">Sample</button><button class="txt" id="clear">Clear</button></div>
+ </div>
+ <div class="panes">
+  <section class="card" id="codeCard" aria-label="HTML editor">
+   <div class="head">
+    <h2>HTML</h2>
+    <div class="tools">
+     <button class="pill" id="live" aria-pressed="true">Live</button>
+     <button class="ib" id="dl" aria-label="Download HTML" title="Download" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 7v10M7.5 12.5 12 17l4.5-4.5"/></svg></button>
+     <button class="ib" id="copy" aria-label="Copy code" title="Copy"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="12" height="15" rx="3"/><path d="M16 21H7a3 3 0 0 1-3-3V8"/></svg></button>
+     <button class="run" id="run">Run</button>
+    </div>
+   </div>
+   <div class="ed"><div class="code">
+    <pre id="hl" aria-hidden="true"></pre>
+    <textarea id="in" wrap="off" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="HTML code" placeholder="Paste or type HTML…"></textarea>
+   </div></div>
+  </section>
+  <section class="card" id="outCard" aria-label="Output">
+   <div class="head">
+    <h2>Output</h2>
+    <div class="tools"><button class="pill" id="theme" aria-pressed="false">Dark preview</button></div>
+   </div>
+   <div class="view" id="view">
+    <iframe id="out" title="Output" sandbox="allow-scripts allow-modals allow-forms allow-popups"></iframe>
+    <div class="empty" id="empty" hidden>Type HTML in the editor and the result appears here.</div>
+   </div>
+  </section>
+ </div>
+ <footer class="credit">Made by <b>Seiborlang code xii</b></footer>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<script>
+const $=s=>document.querySelector(s);
+const ta=$('#in'),pre=$('#hl'),fr=$('#out'),empty=$('#empty'),app=$('#app'),toastEl=$('#toast');
+const SAMPLE=`<!DOCTYPE html>
+<html>
+<body>
+    <!-- 1. Simple unordered list -->
+    <ul type="square">
+        <li>Messi</li>
+        <li>Neymer</li>
+        <li>Ronaldo</li>
+    </ul>
+
+    <!-- 2. start attribute and nested list -->
+    <ol type="A" start="3">
+        <li>Coffee</li>
+        <li>Tea
+            <ul type="disc">
+                <li>Black</li>
+                <li>Green</li>
+            </ul>
+        </li>
+        <li>Milk</li>
+    </ol>
+</body>
+</html>`;
+
+/* ---------- syntax highlighter ---------- */
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const sp=(c,s)=>s?'<span class="'+c+'">'+esc(s)+'</span>':'';
+function embedded(code,js){
+  const re=js
+    ?/(\/\*[\s\S]*?(?:\*\/|$)|\/\/[^\n]*)|("(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?|`(?:\\.|[^`\\])*`?)|(\b\d[\d.]*\b)/g
+    :/(\/\*[\s\S]*?(?:\*\/|$))|("(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?)|(#[0-9a-fA-F]{3,8}\b|\b\d[\d.]*[a-z%]*)/g;
+  let o='',k=0,m;
+  while((m=re.exec(code))){o+=esc(code.slice(k,m.index))+sp(m[1]?'c':m[2]?'v':'n',m[0]);k=re.lastIndex}
+  return o+esc(code.slice(k));
+}
+function highlight(src){
+  let o='',i=0;const n=src.length,ws=/\s/;
+  while(i<n){
+    if(src[i]!=='<'){let j=src.indexOf('<',i);if(j<0)j=n;o+=esc(src.slice(i,j));i=j;continue}
+    if(src.startsWith('<!--',i)){let j=src.indexOf('-->',i+4);j=j<0?n:j+3;o+=sp('c',src.slice(i,j));i=j;continue}
+    if(/^<!doctype/i.test(src.slice(i,i+9))){
+      let j=src.indexOf('>',i);j=j<0?n:j+1;
+      const d=/^(<!doctype\s*)([^>]*)(>?)$/i.exec(src.slice(i,j));
+      o+=sp('d',d[1])+sp('d b',d[2])+sp('d',d[3]);i=j;continue;
+    }
+    const m=/^<(\/?)([a-zA-Z][\w:.-]*)/.exec(src.slice(i,i+80));
+    if(!m){o+='&lt;';i++;continue}
+    o+=sp('p','<'+m[1])+sp('t',m[2]);i+=m[0].length;
+    let eq=false,closed=false;
+    while(i<n){
+      const c=src[i];
+      if(c==='>'){o+=sp('p','>');i++;closed=true;break}
+      if(c==='<')break;
+      if(ws.test(c)){let j=i;while(j<n&&ws.test(src[j]))j++;o+=src.slice(i,j);i=j;continue}
+      if(c==='/'){o+=sp('p','/');i++;continue}
+      if(c==='='){o+=sp('p','=');i++;eq=true;continue}
+      if(c==='"'||c==="'"){let j=src.indexOf(c,i+1);j=j<0?n:j+1;o+=sp('v',src.slice(i,j));i=j;eq=false;continue}
+      let j=i;while(j<n&&!/[\s=>\/<"']/.test(src[j]))j++;
+      if(j===i)j++;
+      o+=sp(eq?'v':'a',src.slice(i,j));i=j;eq=false;
+    }
+    const name=m[2].toLowerCase();
+    if(closed&&!m[1]&&(name==='script'||name==='style')){
+      let j=src.toLowerCase().indexOf('</'+name,i);if(j<0)j=n;
+      o+=embedded(src.slice(i,j),name==='script');i=j;
+    }
+  }
+  return o+(src===''||src.endsWith('\n')?' ':'');
+}
+
+/* ---------- run / render ---------- */
+let dark=false,timer,live=true;
+const render=()=>{pre.innerHTML=highlight(ta.value)};
+function run(){
+  const v=ta.value;
+  empty.hidden=!!v.trim();
+  fr.srcdoc=v.trim()?v+(dark?'\n<style>html{color-scheme:dark}</style>':''):'';
+}
+const mobile=()=>matchMedia('(max-width:800px)').matches;
+function setTab(t){
+  app.dataset.tab=t;
+  $('#tCode').setAttribute('aria-selected',t==='code');
+  $('#tOut').setAttribute('aria-selected',t==='out');
+}
+function toast(msg){
+  toastEl.textContent=msg;toastEl.classList.add('on');
+  clearTimeout(toast.t);toast.t=setTimeout(()=>toastEl.classList.remove('on'),1500);
+}
+function store(){try{localStorage.setItem('htmlrunner:code',ta.value)}catch(e){}}
+function ins(t){
+  if(!document.execCommand('insertText',false,t)){
+    ta.setRangeText(t,ta.selectionStart,ta.selectionEnd,'end');
+    ta.dispatchEvent(new Event('input'));
+  }
+}
+function runNow(){run();if(mobile())setTab('out')}
+
+ta.addEventListener('input',()=>{
+  render();
+  clearTimeout(timer);
+  timer=setTimeout(store,400);
+  if(live)timer=setTimeout(()=>{run();store()},300);
+});
+ta.addEventListener('keydown',e=>{
+  if(e.key==='Tab'&&!e.shiftKey){e.preventDefault();ins('    ');return}
+  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();runNow();return}
+  if(e.key==='Enter'&&!e.shiftKey&&!e.altKey){
+    e.preventDefault();
+    const s=ta.selectionStart,ls=ta.value.lastIndexOf('\n',s-1)+1;
+    ins('\n'+/^[ \t]*/.exec(ta.value.slice(ls,s))[0]);
+  }
+});
+$('#run').onclick=runNow;
+$('#tCode').onclick=()=>setTab('code');
+$('#tOut').onclick=()=>setTab('out');
+$('#live').onclick=function(){live=!live;this.setAttribute('aria-pressed',live);if(live)run()};
+$('#theme').onclick=function(){
+  dark=!dark;this.setAttribute('aria-pressed',dark);
+  $('#view').classList.toggle('dark',dark);run();
+};
+$('#sample').onclick=()=>{ta.value=SAMPLE;render();run();store();ta.focus()};
+$('#clear').onclick=()=>{ta.value='';render();run();store();setTab('code');ta.focus()};
+$('#copy').onclick=async()=>{
+  if(!ta.value){toast('Nothing to copy');return}
+  try{await navigator.clipboard.writeText(ta.value);toast('Copied')}
+  catch(e){
+    ta.select();
+    toast(document.execCommand('copy')?'Copied':'Copy failed');
+    ta.setSelectionRange(ta.value.length,ta.value.length);
+  }
+};
+let dlApi=null;
+$('#dl').onclick=async()=>{
+  if(!dlApi)return;
+  if(!ta.value.trim()){toast('Nothing to save');return}
+  try{await dlApi.save({filename:'index.html',data:ta.value});toast('Saved')}
+  catch(e){if(!e||e.code!=='declined')toast('Could not save')}
+};
+if(window.claude&&claude.use){
+  claude.use('downloads').then(d=>{if(d){dlApi=d;$('#dl').hidden=false}}).catch(()=>{});
+}
+
+let init=SAMPLE;
+try{const s=localStorage.getItem('htmlrunner:code');if(s!==null)init=s}catch(e){}
+ta.value=init;render();run();
+</script>
+</body>
+</html>
